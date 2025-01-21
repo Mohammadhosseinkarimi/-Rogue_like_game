@@ -193,6 +193,7 @@ def draw_maze(screen, maze, offset_y):
             pygame.draw.rect(screen, GRAY, (col * TILE_SIZE, (row - offset_y) * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
 
 
+
 def main():
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
