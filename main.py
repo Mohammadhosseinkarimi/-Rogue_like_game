@@ -119,8 +119,6 @@ def is_room_valid(maze, top_left_x, top_left_y, room_width, room_height, buffer=
 
 
 
-
-
 def generate_room_based_maze(rows, cols):
     """تولید هزارتو به صورت اتاق‌های متصل با یک مسیر یکتا بین اتاق‌ها"""
     maze = [[1 for _ in range(cols)] for _ in range(rows)]
