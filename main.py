@@ -102,8 +102,6 @@ def check_adjacent_cells(maze, x, y):
             count += 1
     return count <= 1
 
-
-
 def is_room_valid(maze, top_left_x, top_left_y, room_width, room_height, buffer=1):
     """
     بررسی می‌کند که آیا یک اتاق می‌تواند در مکان مشخص قرار گیرد بدون تداخل با اتاق‌های دیگر.
