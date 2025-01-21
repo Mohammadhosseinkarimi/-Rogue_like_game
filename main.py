@@ -21,15 +21,22 @@ def distance(x1, y1, x2, y2):
 
 def connect_rooms_with_limit(maze, rooms, max_distance=20):
     """
-    اتصال اتاق‌ها با محدودیت طول مسیر
-    اگر مسیر بیش از max_distance باشد، از یک اتاق واسط استفاده می‌شود.
+    اتصال اتاق‌ها با محدودیت طول مسیر.
+    اگر مسیر بیش از max_distance باشد، از یک یا چند اتاق واسط استفاده می‌شود.
     """
     for i in range(len(rooms) - 1):
         x1, y1 = rooms[i][0] + rooms[i][2] // 2, rooms[i][1] + rooms[i][3] // 2
         x2, y2 = rooms[i + 1][0] + rooms[i + 1][2] // 2, rooms[i + 1][1] + rooms[i + 1][3] // 2
 
-        connect_two_points(maze, x1, y1, x2, y2, max_distance)
-
+        if distance(x1, y1, x2, y2) > max_distance:
+            # اگر فاصله بین دو اتاق بزرگ باشد، اتاق واسط پیدا می‌شود
+            intermediate_room = random.choice(rooms)
+            ix, iy = intermediate_room[0] + intermediate_room[2] // 2, intermediate_room[1] + intermediate_room[3] // 2
+            connect_two_points(maze, x1, y1, ix, iy)
+            connect_two_points(maze, ix, iy, x2, y2)
+        else:
+            # اتصال مستقیم بین اتاق‌ها
+            connect_two_points(maze, x1, y1, x2, y2)
 
 
 def connect_two_points(maze, x1, y1, x2, y2):
@@ -116,15 +123,15 @@ def is_room_valid(maze, top_left_x, top_left_y, room_width, room_height, buffer=
     return True
 
 
-
 def generate_room_based_maze(rows, cols):
     """تولید هزارتو به صورت اتاق‌های متصل با یک مسیر یکتا بین اتاق‌ها"""
     maze = [[1 for _ in range(cols)] for _ in range(rows)]
 
     # اطلاعات اتاق‌ها
     rooms = []
-    room_count = random.randint(10, 15)
+    room_count = random.randint(10, 15)  # تعداد اتاق‌ها به‌صورت تصادفی
     room_size = (3, 5)  # حداقل و حداکثر اندازه اتاق‌ها
+
     for _ in range(room_count):
         room_width = random.randint(max(3, room_size[0]), room_size[1])
         room_height = random.randint(room_size[0], min(9, room_size[1]))
@@ -144,42 +151,82 @@ def generate_room_based_maze(rows, cols):
                         maze[r][c] = 0
             attempts += 1
 
-        # اتصال اتاق‌ها با یک مسیر یکتا
+    # اتصال اتاق‌ها با مسیرهای غیرمستقیم
     for i in range(len(rooms) - 1):
         x1, y1 = rooms[i][0] + rooms[i][2] // 2, rooms[i][1] + rooms[i][3] // 2
         x2, y2 = rooms[i + 1][0] + rooms[i + 1][2] // 2, rooms[i + 1][1] + rooms[i + 1][3] // 2
 
-        # انتخاب یک مسیر مستقیم بین دو اتاق
-        if random.choice([True, False]):
-            # ابتدا افقی سپس عمودی
-            for x in range(min(x1, x2), max(x1, x2) + 1):
-                maze[y1][x] = 0
-            for y in range(min(y1, y2), max(y1, y2) + 1):
-                maze[y][x2] = 0
-        else:
-            # ابتدا عمودی سپس افقی
-            for y in range(min(y1, y2), max(y1, y2) + 1):
-                maze[y][x1] = 0
-            for x in range(min(x1, x2), max(x1, x2) + 1):
-                maze[y2][x] = 0
-        # ایجاد مسیر از شروع تا اولین اتاق و از آخرین اتاق به انتها
+        # ایجاد مسیر زیگ‌زاگ بین اتاق‌ها
+        connect_two_points(maze, x1, y1, x2, y2)
+
+    # ایجاد مسیر از شروع به اولین اتاق
     start_x, start_y = 0, 0
-    end_x, end_y = cols - 1, rows - 1
-
     first_room_x, first_room_y = rooms[0][0] + rooms[0][2] // 2, rooms[0][1] + rooms[0][3] // 2
-    last_room_x, last_room_y = rooms[-1][0] + rooms[-1][2] // 2, rooms[-1][1] + rooms[-1][3] // 2
-
     for x in range(min(start_x, first_room_x), max(start_x, first_room_x) + 1):
         maze[start_y][x] = 0
     for y in range(min(start_y, first_room_y), max(start_y, first_room_y) + 1):
         maze[y][first_room_x] = 0
 
+    # ایجاد مسیر از آخرین اتاق به انتها
+    end_x, end_y = cols - 1, rows - 1
+    last_room_x, last_room_y = rooms[-1][0] + rooms[-1][2] // 2, rooms[-1][1] + rooms[-1][3] // 2
     for x in range(min(end_x, last_room_x), max(end_x, last_room_x) + 1):
         maze[end_y][x] = 0
     for y in range(min(end_y, last_room_y), max(end_y, last_room_y) + 1):
         maze[y][last_room_x] = 0
 
     return maze
+
+
+
+def is_room_valid(maze, x, y, width, height):
+    """بررسی می‌کند که آیا اتاق می‌تواند در موقعیت داده‌شده قرار گیرد یا خیر."""
+    for r in range(y - 1, y + height + 1):
+        for c in range(x - 1, x + width + 1):
+            if maze[r][c] == 0:
+                return False
+    return True
+
+def create_curved_path(maze, x1, y1, x2, y2):
+    """ایجاد مسیر غیرمستقیم و منحنی بین دو نقطه"""
+    current_x, current_y = x1, y1
+    while (current_x, current_y) != (x2, y2):
+        maze[current_y][current_x] = 0
+
+        # تصمیم‌گیری برای حرکت به سمت x یا y با انحراف تصادفی
+        if random.choice([True, False]):
+            if current_x != x2:
+                step = 1 if current_x < x2 else -1
+                current_x += step
+                # انحراف کوچک در محور y
+                if random.random() < 0.5 and current_y != y2:
+                    current_y += random.choice([-1, 1])
+            elif current_y != y2:
+                step = 1 if current_y < y2 else -1
+                current_y += step
+        else:
+            if current_y != y2:
+                step = 1 if current_y < y2 else -1
+                current_y += step
+                # انحراف کوچک در محور x
+                if random.random() < 0.5 and current_x != x2:
+                    current_x += random.choice([-1, 1])
+            elif current_x != x2:
+                step = 1 if current_x < x2 else -1
+                current_x += step
+
+        # جلوگیری از برخورد به دیوارهای خارج از محدوده
+        current_x = max(0, min(len(maze[0]) - 1, current_x))
+        current_y = max(0, min(len(maze) - 1, current_y))
+
+        maze[current_y][current_x] = 0
+
+
+
+def is_valid_path(maze, x, y):
+    """بررسی می‌کند که مسیر داده‌شده خارج از محدوده نباشد."""
+    return 0 <= x < len(maze[0]) and 0 <= y < len(maze) and maze[y][x] == 1
+
 
 
 def draw_maze(screen, maze, offset_y):
