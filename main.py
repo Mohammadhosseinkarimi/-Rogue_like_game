@@ -14,15 +14,110 @@ GRAY = (100, 100, 100)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
-def is_room_valid(maze, top_left_x, top_left_y, room_width, room_height):
-    """بررسی اینکه آیا اتاق در این موقعیت قرار می‌گیرد و تداخلی با اتاق‌های قبلی ندارد"""
-    if top_left_x + room_width > len(maze[0]) or top_left_y + room_height > len(maze):
-        return False  # اتاق از مرزهای نقشه بیرون می‌رود
-    for r in range(top_left_y, top_left_y + room_height):
-        for c in range(top_left_x, top_left_x + room_width):
-            if maze[r][c] == 0:  # اگر جایی که باید اتاق باشد قبلاً باز است (به معنی تداخل با اتاق دیگر)
+def distance(x1, y1, x2, y2):
+    """محاسبه فاصله منهتن بین دو نقطه"""
+    return abs(x1 - x2) + abs(y1 - y2)
+
+
+def connect_rooms_with_limit(maze, rooms, max_distance=20):
+    """
+    اتصال اتاق‌ها با محدودیت طول مسیر
+    اگر مسیر بیش از max_distance باشد، از یک اتاق واسط استفاده می‌شود.
+    """
+    for i in range(len(rooms) - 1):
+        x1, y1 = rooms[i][0] + rooms[i][2] // 2, rooms[i][1] + rooms[i][3] // 2
+        x2, y2 = rooms[i + 1][0] + rooms[i + 1][2] // 2, rooms[i + 1][1] + rooms[i + 1][3] // 2
+
+        connect_two_points(maze, x1, y1, x2, y2, max_distance)
+
+
+
+def connect_two_points(maze, x1, y1, x2, y2):
+    """
+    اتصال دو نقطه در هزارتو با مسیرهایی که عرض آن‌ها ۱ باشد.
+    """
+    if random.choice([True, False]):
+        # ابتدا افقی سپس عمودی
+        for x in range(min(x1, x2), max(x1, x2) + 1):
+            if is_valid_path(maze, x, y1):
+                maze[y1][x] = 0
+        for y in range(min(y1, y2), max(y1, y2) + 1):
+            if is_valid_path(maze, x2, y):
+                maze[y][x2] = 0
+    else:
+        # ابتدا عمودی سپس افقی
+        for y in range(min(y1, y2), max(y1, y2) + 1):
+            if is_valid_path(maze, x1, y):
+                maze[y][x1] = 0
+        for x in range(min(x1, x2), max(x1, x2) + 1):
+            if is_valid_path(maze, x, y2):
+                maze[y2][x] = 0
+
+
+def is_valid_path(maze, x, y):
+    """
+    بررسی می‌کند که آیا اضافه کردن یک سلول به مسیر، عرض بیشتر از ۱ ایجاد می‌کند یا خیر.
+    """
+    if maze[y][x] == 0:  # اگر سلول قبلاً بخشی از مسیر باشد
+        return False
+
+    # بررسی وجود عرض ۲ یا ۳ در جهت افقی و عمودی
+    directions = [
+        [(x - 1, y), (x + 1, y)],  # افقی
+        [(x, y - 1), (x, y + 1)],  # عمودی
+    ]
+
+    for direction in directions:
+        count = 0
+        for nx, ny in direction:
+            if 0 <= ny < len(maze) and 0 <= nx < len(maze[0]) and maze[ny][nx] == 0:
+                count += 1
+        if count > 1:  # اگر عرض ۲ یا بیشتر در یک جهت پیدا شود
+            return False
+
+    # بررسی وجود عرض بیشتر از ۱ در همسایگی
+    neighbors = [
+        (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)
+    ]
+
+    for nx, ny in neighbors:
+        if 0 <= ny < len(maze) and 0 <= nx < len(maze[0]) and maze[ny][nx] == 0:
+            # بررسی سلول‌های دیگر کنار این سلول
+            if not check_adjacent_cells(maze, nx, ny):
+                return False
+
+    return True
+
+
+def check_adjacent_cells(maze, x, y):
+    """
+    بررسی می‌کند که آیا سلول همسایه باعث ایجاد عرض بیشتر از ۱ می‌شود یا خیر.
+    """
+    adjacent_neighbors = [
+        (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)
+    ]
+    count = 0
+    for nx, ny in adjacent_neighbors:
+        if 0 <= ny < len(maze) and 0 <= nx < len(maze[0]) and maze[ny][nx] == 0:
+            count += 1
+    return count <= 1
+
+
+
+def is_room_valid(maze, top_left_x, top_left_y, room_width, room_height, buffer=1):
+    """
+    بررسی می‌کند که آیا یک اتاق می‌تواند در مکان مشخص قرار گیرد بدون تداخل با اتاق‌های دیگر.
+    buffer: فضای حائل اطراف اتاق
+    """
+    for r in range(top_left_y - buffer, top_left_y + room_height + buffer):
+        for c in range(top_left_x - buffer, top_left_x + room_width + buffer):
+            if r < 0 or r >= len(maze) or c < 0 or c >= len(maze[0]):  # خارج از مرز
+                continue
+            if maze[r][c] == 0:  # تداخل با فضای خالی
                 return False
     return True
+
+
 
 def generate_room_based_maze(rows, cols):
     """تولید هزارتو به صورت اتاق‌های متصل با یک مسیر یکتا بین اتاق‌ها"""
@@ -32,10 +127,9 @@ def generate_room_based_maze(rows, cols):
     rooms = []
     room_count = random.randint(10, 15)
     room_size = (3, 5)  # حداقل و حداکثر اندازه اتاق‌ها
-
     for _ in range(room_count):
-        room_width = random.randint(room_size[0], room_size[1])
-        room_height = random.randint(room_size[0], room_size[1])
+        room_width = random.randint(max(3, room_size[0]), room_size[1])
+        room_height = random.randint(room_size[0], min(9, room_size[1]))
 
         # انتخاب مکان تصادفی برای اتاق
         placed = False
@@ -70,7 +164,7 @@ def generate_room_based_maze(rows, cols):
                 maze[y][x1] = 0
             for x in range(min(x1, x2), max(x1, x2) + 1):
                 maze[y2][x] = 0
-    # ایجاد مسیر از شروع تا اولین اتاق و از آخرین اتاق به انتها
+        # ایجاد مسیر از شروع تا اولین اتاق و از آخرین اتاق به انتها
     start_x, start_y = 0, 0
     end_x, end_y = cols - 1, rows - 1
 
@@ -89,6 +183,7 @@ def generate_room_based_maze(rows, cols):
 
     return maze
 
+
 def draw_maze(screen, maze, offset_y):
     """رسم هزارتو روی صفحه با در نظر گرفتن جابجایی عمودی"""
     for row in range(len(maze)):
@@ -96,6 +191,7 @@ def draw_maze(screen, maze, offset_y):
             color = BLACK if maze[row][col] == 1 else WHITE
             pygame.draw.rect(screen, color, (col * TILE_SIZE, (row - offset_y) * TILE_SIZE, TILE_SIZE, TILE_SIZE))
             pygame.draw.rect(screen, GRAY, (col * TILE_SIZE, (row - offset_y) * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
+
 
 def main():
     pygame.init()
@@ -120,39 +216,39 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                # کنترل حرکت بازیکن با محدودیت زمانی
+                current_time = pygame.time.get_ticks()
+                if current_time - last_move_time > move_delay:
+                    if keys[pygame.K_UP] and player_y > 0 and maze[player_y - 1][player_x] == 0:
+                        player_y -= 1
+                        last_move_time = current_time
+                    if keys[pygame.K_DOWN] and player_y < len(maze) - 1 and maze[player_y + 1][player_x] == 0:
+                        player_y += 1
+                        last_move_time = current_time
+                    if keys[pygame.K_LEFT] and player_x > 0 and maze[player_y][player_x - 1] == 0:
+                        player_x -= 1
+                        last_move_time = current_time
+                    if keys[pygame.K_RIGHT] and player_x < COLS - 1 and maze[player_y][player_x + 1] == 0:
+                        player_x += 1
+                        last_move_time = current_time
 
-        # کنترل حرکت بازیکن با محدودیت زمانی
-        current_time = pygame.time.get_ticks()
-        if current_time - last_move_time > move_delay:
-            if keys[pygame.K_UP] and player_y > 0 and maze[player_y - 1][player_x] == 0:
-                player_y -= 1
-                last_move_time = current_time
-            if keys[pygame.K_DOWN] and player_y < len(maze) - 1 and maze[player_y + 1][player_x] == 0:
-                player_y += 1
-                last_move_time = current_time
-            if keys[pygame.K_LEFT] and player_x > 0 and maze[player_y][player_x - 1] == 0:
-                player_x -= 1
-                last_move_time = current_time
-            if keys[pygame.K_RIGHT] and player_x < COLS - 1 and maze[player_y][player_x + 1] == 0:
-                player_x += 1
-                last_move_time = current_time
+                # جابجایی صفحه در صورت حرکت به پایین
+                if player_y - offset_y >= ROWS:
+                    offset_y += ROWS
+                if player_y < offset_y:
+                    offset_y -= ROWS
 
-        # جابجایی صفحه در صورت حرکت به پایین
-        if player_y - offset_y >= ROWS:
-            offset_y += ROWS
-        if player_y < offset_y:
-            offset_y -= ROWS
+                screen.fill(BLACK)
+                draw_maze(screen, maze, offset_y)
 
-        screen.fill(BLACK)
-        draw_maze(screen, maze, offset_y)
+                # رسم بازیکن
+                pygame.draw.rect(screen, RED,
+                                 (player_x * TILE_SIZE, (player_y - offset_y) * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
-        # رسم بازیکن
-        pygame.draw.rect(screen, RED, (player_x * TILE_SIZE, (player_y - offset_y) * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                pygame.display.flip()
+                clock.tick(60)
 
-        pygame.display.flip()
-        clock.tick(60)
+            pygame.quit()
 
-    pygame.quit()
-
-if __name__ == "__main__":
-    main()
+            if name == "__main__":
+                main()
