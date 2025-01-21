@@ -216,39 +216,39 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-                # کنترل حرکت بازیکن با محدودیت زمانی
-                current_time = pygame.time.get_ticks()
-                if current_time - last_move_time > move_delay:
-                    if keys[pygame.K_UP] and player_y > 0 and maze[player_y - 1][player_x] == 0:
-                        player_y -= 1
-                        last_move_time = current_time
-                    if keys[pygame.K_DOWN] and player_y < len(maze) - 1 and maze[player_y + 1][player_x] == 0:
-                        player_y += 1
-                        last_move_time = current_time
-                    if keys[pygame.K_LEFT] and player_x > 0 and maze[player_y][player_x - 1] == 0:
-                        player_x -= 1
-                        last_move_time = current_time
-                    if keys[pygame.K_RIGHT] and player_x < COLS - 1 and maze[player_y][player_x + 1] == 0:
-                        player_x += 1
-                        last_move_time = current_time
 
-                # جابجایی صفحه در صورت حرکت به پایین
-                if player_y - offset_y >= ROWS:
-                    offset_y += ROWS
-                if player_y < offset_y:
-                    offset_y -= ROWS
+        # کنترل حرکت بازیکن با محدودیت زمانی
+        current_time = pygame.time.get_ticks()
+        if current_time - last_move_time > move_delay:
+            if keys[pygame.K_UP] and player_y > 0 and maze[player_y - 1][player_x] == 0:
+                player_y -= 1
+                last_move_time = current_time
+            if keys[pygame.K_DOWN] and player_y < len(maze) - 1 and maze[player_y + 1][player_x] == 0:
+                player_y += 1
+                last_move_time = current_time
+            if keys[pygame.K_LEFT] and player_x > 0 and maze[player_y][player_x - 1] == 0:
+                player_x -= 1
+                last_move_time = current_time
+            if keys[pygame.K_RIGHT] and player_x < COLS - 1 and maze[player_y][player_x + 1] == 0:
+                player_x += 1
+                last_move_time = current_time
 
-                screen.fill(BLACK)
-                draw_maze(screen, maze, offset_y)
+        # جابجایی صفحه در صورت حرکت به پایین
+        if player_y - offset_y >= ROWS:
+            offset_y += ROWS
+        if player_y < offset_y:
+            offset_y -= ROWS
 
-                # رسم بازیکن
-                pygame.draw.rect(screen, RED,
-                                 (player_x * TILE_SIZE, (player_y - offset_y) * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+        screen.fill(BLACK)
+        draw_maze(screen, maze, offset_y)
 
-                pygame.display.flip()
-                clock.tick(60)
+        # رسم بازیکن
+        pygame.draw.rect(screen, RED, (player_x * TILE_SIZE, (player_y - offset_y) * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
-            pygame.quit()
+        pygame.display.flip()
+        clock.tick(60)
 
-            if name == "__main__":
-                main()
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
